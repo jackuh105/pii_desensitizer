@@ -1,9 +1,18 @@
-"""Application configuration loaded from environment variables."""
+"""Application configuration loaded from environment variables.
+
+Reads from system environment variables and ``.env`` file (if present).
+System env vars take precedence over ``.env`` values.
+"""
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+
+from dotenv import load_dotenv
+
+# Load .env file into os.environ (no-op if file doesn't exist)
+load_dotenv()
 
 
 @dataclass(frozen=True)
