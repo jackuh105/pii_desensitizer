@@ -1,0 +1,124 @@
+# tests/recognizers/test_contact.py
+"""Tests for contact PII recognizers (email, phone, IP)."""
+
+import pytest
+
+from pii_desensitizer.recognizers.contact import (
+    EmailRecognizer,
+    HKMacauPhoneRecognizer,
+    IPAddressRecognizer,
+)
+
+
+class TestEmailRecognizer:
+    def test_detects_simple_email(self):
+        rec = EmailRecognizer()
+        text = "Contact me at john@example.com please"
+        results = rec.analyze(
+            text=text,
+            entities=["EMAIL"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+        assert results[0].entity_type == "EMAIL"
+        assert text[results[0].start:results[0].end] == "john@example.com"
+
+    def test_detects_multiple_emails(self):
+        rec = EmailRecognizer()
+        results = rec.analyze(
+            text="john@work.com and jane@home.org",
+            entities=["EMAIL"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 2
+
+    def test_no_false_positive_on_at_sign(self):
+        rec = EmailRecognizer()
+        results = rec.analyze(
+            text="Meet me at 3pm",
+            entities=["EMAIL"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 0
+
+
+class TestHKMacauPhoneRecognizer:
+    def test_detects_hk_mobile_with_country_code(self):
+        rec = HKMacauPhoneRecognizer()
+        text = "Call me at +852 98765432"
+        results = rec.analyze(
+            text=text,
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "+852 98765432"
+
+    def test_detects_macau_mobile(self):
+        rec = HKMacauPhoneRecognizer()
+        text = "My number is 61234567"
+        results = rec.analyze(
+            text=text,
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "61234567"
+
+    def test_detects_phone_with_hyphen(self):
+        rec = HKMacauPhoneRecognizer()
+        results = rec.analyze(
+            text="Fax: 9876-5432",
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+
+    def test_detects_macau_country_code(self):
+        rec = HKMacauPhoneRecognizer()
+        results = rec.analyze(
+            text="+853 61234567",
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+
+    def test_no_false_positive_on_short_number(self):
+        rec = HKMacauPhoneRecognizer()
+        results = rec.analyze(
+            text="Order #12345",
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 0
+
+
+class TestIPAddressRecognizer:
+    def test_detects_ipv4(self):
+        rec = IPAddressRecognizer()
+        text = "Server is at 192.168.1.1"
+        results = rec.analyze(
+            text=text,
+            entities=["IP_ADDRESS"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "192.168.1.1"
+
+    def test_detects_multiple_ips(self):
+        rec = IPAddressRecognizer()
+        results = rec.analyze(
+            text="From 10.0.0.1 to 172.16.0.1",
+            entities=["IP_ADDRESS"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 2
+
+    def test_no_false_positive_on_version_number(self):
+        rec = IPAddressRecognizer()
+        results = rec.analyze(
+            text="Version 1.2.3 is out",
+            entities=["IP_ADDRESS"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 0
