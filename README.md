@@ -174,14 +174,14 @@ pii-desensitizer/
 │   │   ├── financial.py       # Credit card (Luhn), bank account
 │   │   ├── temporal.py        # Birthday
 │   │   ├── address.py         # Address heuristic
-│   │   └── person_ner.py      # Chinese person name (spaCy zh)
+│   │   └── person_ner.py      # Chinese person name (spaCy zh + OpenCC)
 │   ├── engine/
 │   │   ├── desensitize.py     # Orchestrates detect → replace → store
 │   │   ├── restore.py         # Regex scan → lookup → replace back
 │   │   └── placeholder.py     # Custom {{TYPE_N}} Presidio Operator
 │   └── store/
 │       └── redis_store.py     # Redis mapping store (namespace + TTL)
-├── tests/                     # 77 tests (unit + integration)
+├── tests/                     # 83 tests (unit + integration)
 ├── docker/
 │   ├── Dockerfile
 │   └── docker-compose.yml
@@ -201,7 +201,7 @@ pii-desensitizer/
 
 ### Known Limitations
 
-- **Traditional Chinese NER** — `zh_core_web_sm` is trained on Simplified Chinese (OntoNotes 5); Traditional Chinese (HK/Macau) has lower recall. Future: add OpenCC conversion.
+- **Compound surnames** — Chinese compound surnames (歐陽, 司徒, 司馬) may still be missed by NER even after OpenCC conversion; this is a spaCy segmenter limitation.
 - **Address detection** — heuristic keyword + regex; may miss non-standard addresses. Future: add LLM fallback.
 - **Redis restart** — in-progress restore calls fail if Redis restarts (acceptable: LLM processing window is short).
 
@@ -210,5 +210,6 @@ pii-desensitizer/
 - **Python 3.12** + **FastAPI** + **uvicorn**
 - **Microsoft Presidio** (presidio-analyzer + presidio-anonymizer)
 - **spaCy** (`en_core_web_sm` + `zh_core_web_sm`)
+- **OpenCC** (`opencc-python-reimplemented`) — Traditional→Simplified conversion before Chinese NER
 - **Redis 7** (in-memory, no persistence)
 - **Docker Compose** for deployment

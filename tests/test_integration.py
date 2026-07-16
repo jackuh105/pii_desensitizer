@@ -100,3 +100,51 @@ class TestFullCycle:
             text=d2.text, system_id=system_id, session_id=session_id
         )
         assert "john@test.com" in r2.text
+
+
+class TestTraditionalChineseRoundTrip:
+    """Test that Traditional Chinese names survive the full desensitize→restore cycle.
+
+    This verifies:
+    1. Traditional Chinese names are detected (via OpenCC conversion)
+    2. The mapping stores the original Traditional text (not Simplified)
+    3. Restore returns the original Traditional text
+    """
+
+    def test_traditional_chinese_name_round_trip(self, desensitize_engine, restore_engine):
+        original = "我是陳大文，請聯絡我"
+        system_id = "test_sys"
+
+        d_result = desensitize_engine.desensitize(
+            text=original, system_id=system_id, session_id=None
+        )
+        assert "陳大文" not in d_result.text
+        assert "{{PERSON_" in d_result.text
+
+        r_result = restore_engine.restore(
+            text=d_result.text, system_id=system_id, session_id=d_result.session_id
+        )
+        assert "陳大文" in r_result.text
+        assert "陈大文" not in r_result.text
+
+    def test_traditional_chinese_with_other_pii_round_trip(
+        self, desensitize_engine, restore_engine
+    ):
+        original = "黃志偉先生，電話 +852 98765432，email: john@test.com"
+        system_id = "test_sys"
+
+        d_result = desensitize_engine.desensitize(
+            text=original, system_id=system_id, session_id=None
+        )
+        assert "黃志偉" not in d_result.text
+        assert "{{PERSON_" in d_result.text
+        assert "john@test.com" not in d_result.text
+        assert "98765432" not in d_result.text
+
+        r_result = restore_engine.restore(
+            text=d_result.text, system_id=system_id, session_id=d_result.session_id
+        )
+        assert "黃志偉" in r_result.text
+        assert "黄志伟" not in r_result.text
+        assert "john@test.com" in r_result.text
+        assert "98765432" in r_result.text

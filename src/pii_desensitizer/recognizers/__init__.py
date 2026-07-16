@@ -96,6 +96,7 @@ def build_analyzer() -> AnalyzerEngine:
     ]
 
     for recognizer in custom_recognizers:
+        recognizer.load()
         registry.add_recognizer(recognizer)
 
     # 4. Build analyzer
