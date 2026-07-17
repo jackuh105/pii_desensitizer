@@ -1,4 +1,3 @@
-# src/pii_desensitizer/recognizers/identity.py
 """Regex-based recognizers for identity PII: HKID, Macau ID, Passport, License plate."""
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ class HKIDRecognizer(PatternRecognizer):
             patterns=[
                 Pattern(
                     name="hkid_pattern",
-                    regex=r"\b[A-Z]{1,2}\d{6}\([0-9A]\)",
+                    regex=r"(?<![A-Za-z0-9])[A-Z]{1,2}\d{6}\([0-9A]\)",
                     score=0.95,
                 )
             ],
@@ -41,7 +40,7 @@ class MacauIDRecognizer(PatternRecognizer):
             patterns=[
                 Pattern(
                     name="macau_id_pattern",
-                    regex=r"\b\d{7}\(\d\)",
+                    regex=r"(?<![A-Za-z0-9])\d{7}\(\d\)",
                     score=0.85,
                 )
             ],
@@ -63,7 +62,7 @@ class HKPassportRecognizer(PatternRecognizer):
             patterns=[
                 Pattern(
                     name="hk_passport_pattern",
-                    regex=r"\b[HK]\d{8}\b",
+                    regex=r"(?<![A-Za-z0-9])[HK]\d{8}(?![A-Za-z0-9])",
                     score=0.85,
                 )
             ],
@@ -73,10 +72,13 @@ class HKPassportRecognizer(PatternRecognizer):
 
 
 class HKLicensePlateRecognizer(PatternRecognizer):
-    """Detect Hong Kong vehicle license plates.
+    """Detect Hong Kong and Macau vehicle license plates.
 
-    Format: 2 English letters + space + 4 digits (most common format)
-    Example: AB 1234
+    HK format: 2 English letters + optional space + 4 digits
+      Example: AB 1234, AB1234
+
+    Macau format: 2 English letters + hyphen + 2 digits + hyphen + 2 digits
+      Example: MX-00-00
     """
 
     def __init__(self) -> None:
@@ -85,9 +87,14 @@ class HKLicensePlateRecognizer(PatternRecognizer):
             patterns=[
                 Pattern(
                     name="hk_plate_pattern",
-                    regex=r"\b[A-Z]{2}\s?\d{4}\b",
+                    regex=r"(?<![A-Za-z0-9])[A-Z]{2}\s?\d{4}(?![A-Za-z0-9])",
                     score=0.7,
-                )
+                ),
+                Pattern(
+                    name="macau_plate_pattern",
+                    regex=r"(?<![A-Za-z0-9])[A-Z]{2}-\d{2}-\d{2}(?![A-Za-z0-9])",
+                    score=0.85,
+                ),
             ],
             name="HKLicensePlateRecognizer",
             context=["plate", "車牌", "vehicle", "car", "license"],

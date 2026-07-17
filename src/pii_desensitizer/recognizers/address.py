@@ -26,8 +26,8 @@ _ZH_ADDRESS_PATTERNS = [
 
 # English address keywords
 _EN_ADDRESS_PATTERNS = [
-    r"\b\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Dr|Bldg|Tower|Centre|Plaza|Garden|Ct|Cres|Terr|Ln)\b",
-    r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Bldg|Tower|Centre|Plaza|Garden)\b",
+    r"(?<![A-Za-z0-9])\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Dr|Bldg|Tower|Centre|Plaza|Garden|Ct|Cres|Terr|Ln)(?![A-Za-z0-9])",
+    r"(?<![A-Za-z0-9])[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Bldg|Tower|Centre|Plaza|Garden)(?![A-Za-z0-9])",
 ]
 
 # HK/Macau district keywords for context boosting

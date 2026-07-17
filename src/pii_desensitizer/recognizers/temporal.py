@@ -1,4 +1,3 @@
-# src/pii_desensitizer/recognizers/temporal.py
 """Regex-based recognizer for birthday/date of birth."""
 
 from __future__ import annotations
@@ -21,12 +20,12 @@ class BirthdayRecognizer(PatternRecognizer):
             patterns=[
                 Pattern(
                     name="birthday_iso",
-                    regex=r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b",
+                    regex=r"(?<![A-Za-z0-9])\d{4}[-/]\d{1,2}[-/]\d{1,2}(?![A-Za-z0-9])",
                     score=0.4,
                 ),
                 Pattern(
                     name="birthday_dmy",
-                    regex=r"\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b",
+                    regex=r"(?<![A-Za-z0-9])\d{1,2}[-/]\d{1,2}[-/]\d{4}(?![A-Za-z0-9])",
                     score=0.4,
                 ),
             ],
