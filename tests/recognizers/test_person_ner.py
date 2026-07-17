@@ -1,8 +1,11 @@
-"""Tests for Chinese person name recognizer with OpenCC Traditional→Simplified conversion."""
+"""Tests for person name recognizers: Chinese NER + context fallback, English CJK filter."""
 
 import pytest
 
-from pii_desensitizer.recognizers.person_ner import ChinesePersonRecognizer
+from pii_desensitizer.recognizers.person_ner import (
+    ChinesePersonRecognizer,
+    EnglishPersonRecognizer,
+)
 
 
 @pytest.fixture(scope="module")
@@ -162,3 +165,83 @@ class TestChinesePersonRecognizer:
         )
         person_texts = [text[r.start:r.end] for r in results]
         assert "陳大文" in person_texts
+
+
+class TestChinesePersonRecognizerContextFallback:
+    """Tests for the context-based fallback that catches names zh NER misses."""
+
+    @pytest.fixture(scope="module")
+    def recognizer(self):
+        rec = ChinesePersonRecognizer()
+        rec.load()
+        return rec
+
+    def test_detects_name_after_form_field_keyword(self, recognizer):
+        text = "本人姓名：施例男"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "施例男" in person_texts
+
+    def test_detects_name_after子女_keyword(self, recognizer):
+        text = "本人的子女：施例男"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "施例男" in person_texts
+
+    def test_detects_name_after申請人簽署_keyword(self, recognizer):
+        text = "申請人簽署：陳大文"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "陳大文" in person_texts
+
+    def test_no_false_positive_on_non_name_field(self, recognizer):
+        text = "性別：男"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        assert len(results) == 0
+
+    def test_context_fallback_does_not_duplicate_ner_result(self, recognizer):
+        text = "姓名：陳大文"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        spans = [(r.start, r.end) for r in results if r.score >= 0.75]
+        overlaps = [
+            (s1, s2)
+            for i, s1 in enumerate(spans)
+            for s2 in spans[i + 1:]
+            if s1[0] < s2[1] and s2[0] < s1[1]
+        ]
+        assert len(overlaps) == 0
+
+
+class TestEnglishPersonRecognizerCJKFilter:
+    """Tests that EnglishPersonRecognizer filters CJK from PERSON results."""
+
+    def test_no_cjk_person_on_chinese_text(self):
+        import spacy
+        from presidio_analyzer.nlp_engine import NlpArtifacts
+
+        nlp = spacy.load("en_core_web_sm")
+        rec = EnglishPersonRecognizer()
+        text = "本人姓名：陳大文，澳門永久居民身份證編號：12345678"
+        doc = nlp(text)
+        artifacts = NlpArtifacts(
+            entities=doc.ents,
+            tokens=doc,
+            tokens_indices=[t.idx for t in doc],
+            lemmas=[t.lemma_ for t in doc],
+            nlp_engine=None,
+            language="en",
+        )
+        results = rec.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=artifacts
+        )
+        assert len(results) == 0

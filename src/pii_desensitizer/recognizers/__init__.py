@@ -2,10 +2,12 @@
 """Recognizer registry: builds and configures the Presidio AnalyzerEngine.
 
 Architecture:
-  1. Configure NLP engine with en_core_web_sm only (for English NER + nlp_artifacts)
-  2. Add SpacyRecognizer via add_nlp_recognizer (handles English PERSON via NER)
+  1. Configure NLP engine with en_core_web_sm (for nlp_artifacts + English NER)
+  2. Add SpacyRecognizer via add_nlp_recognizer, then replace it with
+     EnglishPersonRecognizer (subclasses SpacyRecognizer, filters CJK from
+     PERSON results to prevent en_core_web_sm garbage on Chinese text)
   3. Register custom regex recognizers for all HK/Macau PII types
-  4. Register ChinesePersonRecognizer (loads zh_core_web_sm independently)
+  4. Register ChinesePersonRecognizer (zh_core_web_sm + OpenCC + context fallback)
   5. All recognizers registered for language "en" (mixed text handled in one pass)
 
 Note: We use add_nlp_recognizer instead of load_predefined_recognizers because
@@ -35,7 +37,10 @@ from pii_desensitizer.recognizers.financial import (
     CreditCardRecognizer,
 )
 from pii_desensitizer.recognizers.address import AddressRecognizer
-from pii_desensitizer.recognizers.person_ner import ChinesePersonRecognizer
+from pii_desensitizer.recognizers.person_ner import (
+    ChinesePersonRecognizer,
+    EnglishPersonRecognizer,
+)
 
 # All entity types this system detects
 ALL_ENTITIES = [
@@ -57,9 +62,9 @@ def build_analyzer() -> AnalyzerEngine:
 
     Returns an AnalyzerEngine with:
       - English NLP engine (en_core_web_sm) for nlp_artifacts
-      - SpacyRecognizer for English PERSON (via add_nlp_recognizer)
+      - EnglishPersonRecognizer for English PERSON (SpacyRecognizer subclass, CJK filtered)
       - Custom regex recognizers for all HK/Macau PII types
-      - ChinesePersonRecognizer for Chinese person name NER
+      - ChinesePersonRecognizer for Chinese person name NER + context fallback
     """
     # 1. Configure NLP engine with English model only
     nlp_config = {
@@ -74,6 +79,13 @@ def build_analyzer() -> AnalyzerEngine:
     # 2. Create registry and add SpacyRecognizer for English NER
     registry = RecognizerRegistry()
     registry.add_nlp_recognizer(nlp_engine=nlp_engine)
+
+    from presidio_analyzer.predefined_recognizers import SpacyRecognizer
+
+    registry.recognizers = [
+        EnglishPersonRecognizer() if isinstance(r, SpacyRecognizer) else r
+        for r in registry.recognizers
+    ]
 
     # 3. Register custom recognizers (all for language "en")
     custom_recognizers = [
