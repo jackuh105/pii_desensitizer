@@ -38,7 +38,6 @@ Client System                    Desensitizer Proxy                 Redis
 | Address | `ADDRESS` | Keyword + Regex heuristic | 中環德輔道中1號 |
 | Credit Card | `CREDIT_CARD` | BIN regex (5 brands) + Luhn | 4111-1111-1111-1111 |
 | Passport (HK) | `PASSPORT` | Regex | H12345678 |
-| Birthday | `BIRTHDAY` | Regex | 1990-01-15 |
 | IP Address | `IP_ADDRESS` | Regex | 192.168.1.1 |
 | License Plate (HK+Macau) | `LICENSE_PLATE` | Regex | AB 1234, MX-00-00 |
 
@@ -171,7 +170,7 @@ pii-desensitizer/
 │   │   ├── contact.py         # Email, HK/Macau phone, IP address
 │   │   ├── identity.py        # HKID, Macau ID, passport, license plate
 │   │   ├── financial.py       # Credit card (Luhn), bank account
-│   │   ├── temporal.py        # Birthday
+│   │   ├── temporal.py        # Birthday (unregistered — dates are ambiguous)
 │   │   ├── address.py         # Address heuristic
 │   │   └── person_ner.py      # Chinese person name (spaCy zh + OpenCC)
 │   ├── engine/
