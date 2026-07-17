@@ -25,23 +25,22 @@ Client System                    Desensitizer Proxy                 Redis
      │                                    │
 ```
 
-## PII Types Detected (12)
+## PII Types Detected (11)
 
 | Type | Entity Key | Method | Example |
 |---|---|---|---|
-| Person Name (Chinese) | `PERSON` | spaCy NER (`zh_core_web_sm`) | 陳大文 |
+| Person Name (Chinese) | `PERSON` | spaCy NER (`zh_core_web_sm` + OpenCC) | 陳大文 |
 | Person Name (English) | `PERSON` | spaCy NER (`en_core_web_sm`) | John Chan |
-| Phone (HK/Macau) | `PHONE_NUMBER` | Regex | +852 98765432, 61234567 |
+| Phone (HK/Macau) | `PHONE_NUMBER` | Regex (3-tier scoring) | +852 98765432, 28512345 |
 | Email | `EMAIL` | Regex | john@example.com |
 | HKID | `HKID` | Regex | A123456(7) |
 | Macau ID | `MACAU_ID` | Regex | 1234567(8) |
 | Address | `ADDRESS` | Keyword + Regex heuristic | 中環德輔道中1號 |
-| Credit Card | `CREDIT_CARD` | Regex + Luhn validation | 4111-1111-1111-1111 |
-| Bank Account | `BANK_ACCOUNT` | Regex + context | 123456789012 |
+| Credit Card | `CREDIT_CARD` | BIN regex (5 brands) + Luhn | 4111-1111-1111-1111 |
 | Passport (HK) | `PASSPORT` | Regex | H12345678 |
 | Birthday | `BIRTHDAY` | Regex | 1990-01-15 |
 | IP Address | `IP_ADDRESS` | Regex | 192.168.1.1 |
-| License Plate (HK) | `LICENSE_PLATE` | Regex | AB 1234 |
+| License Plate (HK+Macau) | `LICENSE_PLATE` | Regex | AB 1234, MX-00-00 |
 
 ## Quick Start
 
@@ -181,7 +180,7 @@ pii-desensitizer/
 │   │   └── placeholder.py     # Custom {{TYPE_N}} Presidio Operator
 │   └── store/
 │       └── redis_store.py     # Redis mapping store (namespace + TTL)
-├── tests/                     # 83 tests (unit + integration)
+├── tests/                     # 97 tests (unit + integration)
 ├── docker/
 │   ├── Dockerfile
 │   └── docker-compose.yml
@@ -202,6 +201,7 @@ pii-desensitizer/
 ### Known Limitations
 
 - **Compound surnames** — Chinese compound surnames (歐陽, 司徒, 司馬) may still be missed by NER even after OpenCC conversion; this is a spaCy segmenter limitation.
+- **Bank account numbers** — not detected. Bank account numbers have no reliable format (vary by bank, 9-19 digits), making regex detection highly prone to false positives.
 - **Address detection** — heuristic keyword + regex; may miss non-standard addresses. Future: add LLM fallback.
 - **Redis restart** — in-progress restore calls fail if Redis restarts (acceptable: LLM processing window is short).
 
