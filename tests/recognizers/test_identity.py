@@ -27,6 +27,13 @@ class TestHKIDRecognizer:
         results = rec.analyze(text="See section A1(2)", entities=["HKID"], nlp_artifacts=None)
         assert len(results) == 0
 
+    def test_detects_hkid_after_chinese_text(self):
+        rec = HKIDRecognizer()
+        text = "身份證A123456(7)"
+        results = rec.analyze(text=text, entities=["HKID"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "A123456(7)"
+
 
 class TestMacauIDRecognizer:
     def test_detects_macau_id(self):
@@ -50,6 +57,13 @@ class TestHKPassportRecognizer:
         results = rec.analyze(text="Passport K12345678", entities=["PASSPORT"], nlp_artifacts=None)
         assert len(results) == 1
 
+    def test_detects_passport_after_chinese_text(self):
+        rec = HKPassportRecognizer()
+        text = "護照H12345678"
+        results = rec.analyze(text=text, entities=["PASSPORT"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "H12345678"
+
 
 class TestHKLicensePlateRecognizer:
     def test_detects_standard_plate(self):
@@ -58,3 +72,10 @@ class TestHKLicensePlateRecognizer:
         results = rec.analyze(text=text, entities=["LICENSE_PLATE"], nlp_artifacts=None)
         assert len(results) == 1
         assert text[results[0].start:results[0].end] == "AB 1234"
+
+    def test_detects_macau_license_plate(self):
+        rec = HKLicensePlateRecognizer()
+        text = "車牌MX-00-00"
+        results = rec.analyze(text=text, entities=["LICENSE_PLATE"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "MX-00-00"

@@ -22,3 +22,9 @@ class TestBirthdayRecognizer:
             nlp_artifacts=None,
         )
         assert len(results) == 1
+
+    def test_detects_birthday_after_chinese_text(self):
+        rec = BirthdayRecognizer()
+        text = "生日1990-01-15"
+        results = rec.analyze(text=text, entities=["BIRTHDAY"], nlp_artifacts=None)
+        assert len(results) == 1

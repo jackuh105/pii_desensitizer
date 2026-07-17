@@ -41,6 +41,20 @@ class TestEmailRecognizer:
         )
         assert len(results) == 0
 
+    def test_detects_email_after_chinese_text(self):
+        rec = EmailRecognizer()
+        text = "我的電郵是testuser@example.com"
+        results = rec.analyze(text=text, entities=["EMAIL"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "testuser@example.com"
+
+    def test_detects_email_before_chinese_text(self):
+        rec = EmailRecognizer()
+        text = "testuser@example.com已收到"
+        results = rec.analyze(text=text, entities=["EMAIL"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "testuser@example.com"
+
 
 class TestHKMacauPhoneRecognizer:
     def test_detects_hk_mobile_with_country_code(self):
@@ -92,6 +106,20 @@ class TestHKMacauPhoneRecognizer:
         )
         assert len(results) == 0
 
+    def test_detects_phone_after_chinese_text(self):
+        rec = HKMacauPhoneRecognizer()
+        text = "電話98765432"
+        results = rec.analyze(text=text, entities=["PHONE_NUMBER"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "98765432"
+
+    def test_detects_macau_landline_28_prefix(self):
+        rec = HKMacauPhoneRecognizer()
+        text = "辦公電話28512345"
+        results = rec.analyze(text=text, entities=["PHONE_NUMBER"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "28512345"
+
 
 class TestIPAddressRecognizer:
     def test_detects_ipv4(self):
@@ -122,3 +150,10 @@ class TestIPAddressRecognizer:
             nlp_artifacts=None,
         )
         assert len(results) == 0
+
+    def test_detects_ip_after_chinese_text(self):
+        rec = IPAddressRecognizer()
+        text = "伺服器192.168.1.1"
+        results = rec.analyze(text=text, entities=["IP_ADDRESS"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "192.168.1.1"
