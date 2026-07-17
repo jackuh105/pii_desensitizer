@@ -40,6 +40,8 @@ class ChinesePersonRecognizer(EntityRecognizer):
     OpenCC preserves string length (1:1 character mapping).
     """
 
+    _PUNCTUATION_CHARS = set("()（）.,，。、；;：:！!？?「」『』\"'`'\"")
+
     def __init__(self) -> None:
         super().__init__(
             supported_entities=["PERSON"],
@@ -63,7 +65,8 @@ class ChinesePersonRecognizer(EntityRecognizer):
         """Analyze text for Chinese person names.
 
         Converts Traditional→Simplified before NER. Returns offsets that
-        are valid on the original (Traditional) text.
+        are valid on the original (Traditional) text. Filters out false
+        positives where spaCy tags punctuation-adjacent text as PERSON.
         """
         if not self._nlp or not self._cc or not text.strip():
             return []
@@ -71,27 +74,29 @@ class ChinesePersonRecognizer(EntityRecognizer):
         if "PERSON" not in entities:
             return []
 
-        # Convert Traditional → Simplified (1:1, preserves length)
         simplified_text = self._cc.convert(text)
 
-        # Run NER on Simplified text
         doc = self._nlp(simplified_text)
 
-        # Offsets are valid on the original text because OpenCC preserves length
         results: List[RecognizerResult] = []
         for ent in doc.ents:
-            if ent.label_ == "PERSON":
-                results.append(
-                    RecognizerResult(
-                        entity_type="PERSON",
-                        start=ent.start_char,
-                        end=ent.end_char,
-                        score=0.85,
-                        recognition_metadata={
-                            RecognizerResult.RECOGNIZER_NAME_KEY: self.name,
-                            RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
-                        },
-                    )
+            if ent.label_ != "PERSON":
+                continue
+
+            if self._PUNCTUATION_CHARS & set(ent.text):
+                continue
+
+            results.append(
+                RecognizerResult(
+                    entity_type="PERSON",
+                    start=ent.start_char,
+                    end=ent.end_char,
+                    score=0.85,
+                    recognition_metadata={
+                        RecognizerResult.RECOGNIZER_NAME_KEY: self.name,
+                        RecognizerResult.RECOGNIZER_IDENTIFIER_KEY: self.id,
+                    },
                 )
+            )
 
         return results

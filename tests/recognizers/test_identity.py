@@ -43,6 +43,53 @@ class TestMacauIDRecognizer:
         assert len(results) == 1
         assert text[results[0].start:results[0].end] == "1234567(8)"
 
+    def test_detects_macau_id_simplified_1_prefix(self):
+        rec = MacauIDRecognizer()
+        text = "ID NO.: 11234567"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "11234567"
+
+    def test_detects_macau_id_simplified_after_chinese(self):
+        rec = MacauIDRecognizer()
+        text = "身份證14567890"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "14567890"
+
+    def test_detects_macau_id_formal_1_prefix(self):
+        rec = MacauIDRecognizer()
+        text = "1123456(7)"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "1123456(7)"
+
+    def test_detects_macau_id_formal_5_prefix(self):
+        rec = MacauIDRecognizer()
+        text = "5123456(7)"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "5123456(7)"
+
+    def test_detects_macau_id_formal_7_prefix(self):
+        rec = MacauIDRecognizer()
+        text = "7123456(8)"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "7123456(8)"
+
+    def test_no_false_positive_on_non_macau_id_simplified(self):
+        rec = MacauIDRecognizer()
+        text = "ID: 28512345"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 0
+
+    def test_no_false_positive_on_non_macau_id_formal_parens(self):
+        rec = MacauIDRecognizer()
+        text = "8123456(9)"
+        results = rec.analyze(text=text, entities=["MACAU_ID"], nlp_artifacts=None)
+        assert len(results) == 0
+
 
 class TestHKPassportRecognizer:
     def test_detects_h_passport(self):

@@ -136,3 +136,29 @@ class TestChinesePersonRecognizer:
             nlp_artifacts=None,
         )
         assert isinstance(results, list)
+
+    def test_filters_punctuation_false_positive(self, recognizer):
+        """PERSON results containing punctuation should be filtered out."""
+        text = "電子身份識別工具(高級)未開啟"
+        results = recognizer.analyze(
+            text=text,
+            entities=["PERSON"],
+            nlp_artifacts=None,
+        )
+        for r in results:
+            matched = text[r.start:r.end]
+            assert "(" not in matched
+            assert ")" not in matched
+            assert "（" not in matched
+            assert "）" not in matched
+
+    def test_does_not_filter_real_names_with_no_punctuation(self, recognizer):
+        """Real person names (no punctuation) should not be filtered."""
+        text = "請聯絡陳大文先生"
+        results = recognizer.analyze(
+            text=text,
+            entities=["PERSON"],
+            nlp_artifacts=None,
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "陳大文" in person_texts

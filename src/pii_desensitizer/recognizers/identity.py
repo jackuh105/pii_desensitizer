@@ -30,8 +30,15 @@ class HKIDRecognizer(PatternRecognizer):
 class MacauIDRecognizer(PatternRecognizer):
     """Detect Macau Identity Card numbers.
 
-    Format: 7 digits + (1 check digit)
-    Example: 1234567(8)
+    Macau ID numbers are 8 digits starting with 1, 5, or 7.
+    Two formats:
+      - Formal:   [157]XXXXXX(X)  e.g. 1512720(2)
+      - Simplified: [157]XXXXXXX   e.g. 11234567
+
+    Scoring:
+      - Formal format: 0.85 (parentheses make it unambiguous)
+      - Simplified 1-prefix: 0.85 (phones never start with 1)
+      - Simplified 5/7-prefix: 0.4 (ambiguous with HK mobile, relies on context)
     """
 
     def __init__(self) -> None:
@@ -39,13 +46,26 @@ class MacauIDRecognizer(PatternRecognizer):
             supported_entity="MACAU_ID",
             patterns=[
                 Pattern(
-                    name="macau_id_pattern",
-                    regex=r"(?<![A-Za-z0-9])\d{7}\(\d\)",
+                    name="macau_id_formal",
+                    regex=r"(?<![A-Za-z0-9])[157]\d{6}\(\d\)",
                     score=0.85,
-                )
+                ),
+                Pattern(
+                    name="macau_id_simplified_1_prefix",
+                    regex=r"(?<![A-Za-z0-9])1\d{7}(?![A-Za-z0-9])",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="macau_id_simplified_57_prefix",
+                    regex=r"(?<![A-Za-z0-9])[57]\d{7}(?![A-Za-z0-9])",
+                    score=0.4,
+                ),
             ],
             name="MacauIDRecognizer",
-            context=["macau", "澳門", "身份證", "bilhete", "id"],
+            context=[
+                "macau", "澳門", "身份證", "bilhete", "id",
+                "id no", "id number", "證件號碼", "證件編號", "編號",
+            ],
         )
 
 
