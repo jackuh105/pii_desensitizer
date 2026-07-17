@@ -32,7 +32,6 @@ from pii_desensitizer.recognizers.identity import (
     MacauIDRecognizer,
 )
 from pii_desensitizer.recognizers.financial import (
-    BankAccountRecognizer,
     CreditCardRecognizer,
 )
 from pii_desensitizer.recognizers.temporal import BirthdayRecognizer
@@ -48,7 +47,6 @@ ALL_ENTITIES = [
     "MACAU_ID",
     "ADDRESS",
     "CREDIT_CARD",
-    "BANK_ACCOUNT",
     "PASSPORT",
     "BIRTHDAY",
     "IP_ADDRESS",
@@ -88,7 +86,6 @@ def build_analyzer() -> AnalyzerEngine:
         MacauIDRecognizer(),
         AddressRecognizer(),
         CreditCardRecognizer(),
-        BankAccountRecognizer(),
         HKPassportRecognizer(),
         BirthdayRecognizer(),
         HKLicensePlateRecognizer(),
