@@ -14,14 +14,20 @@ from __future__ import annotations
 
 from presidio_analyzer import Pattern, PatternRecognizer
 
+# Characters allowed in address prefix: excludes whitespace + sentence/clause
+# punctuation so the regex cannot cross sentence boundaries.
+_ZH_PREFIX = r"[^\s，。、：；！？「」『』（）【】《》…,.;:!?(){}\[\]\"']"
+
 # Chinese address keywords (suffixes that strongly indicate an address)
 _ZH_ADDRESS_PATTERNS = [
-    # Street + number prefix
-    r"[^\s]{2,}(?:道|路|街|大道|徑|巷|里|圍|臺)[\d]*號?",
-    # Building / estate names
-    r"[^\s]{2,}(?:大廈|中心|花園|廣場|苑|邨|臺|樓|村|里)",
+    # Street + number prefix (unambiguous street keywords)
+    rf"{_ZH_PREFIX}{{2,10}}(?:道|路|街|大道|徑|巷|里|圍)[\d]*號?",
+    # 臺 requires a number suffix (prevents 平臺/舞臺/講臺 false positives)
+    rf"{_ZH_PREFIX}{{2,10}}臺[\d]+號?",
+    # Building / estate names (臺 removed — too ambiguous without number)
+    rf"{_ZH_PREFIX}{{2,10}}(?:大廈|中心|花園|廣場|苑|邨|樓|村)",
     # Macau-specific
-    r"[^\s]{2,}(?:馬路|街|里|巷|圍|石級|斜路)[\d]*號?",
+    rf"{_ZH_PREFIX}{{2,10}}(?:馬路|街|里|巷|圍|石級|斜路)[\d]*號?",
 ]
 
 # English address keywords
