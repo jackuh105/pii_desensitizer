@@ -1,8 +1,13 @@
-"""Regex-based recognizers for contact PII: Email, Phone (HK/Macau), IP address."""
+"""Regex-based recognizers for contact PII: Email, Phone (HK/Macau/Mainland), IP address."""
 
 from __future__ import annotations
 
+import re
+
 from presidio_analyzer import Pattern, PatternRecognizer
+from presidio_analyzer.nlp_engine import NlpArtifacts
+from typing import List, Optional
+from presidio_analyzer import RecognizerResult
 
 
 class EmailRecognizer(PatternRecognizer):
@@ -24,13 +29,20 @@ class EmailRecognizer(PatternRecognizer):
 
 
 class HKMacauPhoneRecognizer(PatternRecognizer):
-    """Detect Hong Kong and Macau phone numbers.
+    """Detect Hong Kong, Macau, and mainland China phone numbers.
 
-    Three-tier scoring:
-      - +852/+853 with country code: score 0.95 (highest confidence)
+    Four-tier scoring:
+      - +852/+853 with country code: score 0.95
+      - +86 with country code (mainland): score 0.90
       - 28 prefix (Macau landline): score 0.85
-      - Other 8-digit: score 0.4 (relies on context)
+      - Mainland 11-digit mobile (1[3-9] prefix): score 0.85
+      - Other 8-digit HK/Macau: score 0.4 (relies on context, date-like filtered)
     """
+
+    # YYYYMMDD pattern: 19xx/20xx + valid month + valid day
+    _DATE_LIKE_RE = re.compile(
+        r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$"
+    )
 
     def __init__(self) -> None:
         super().__init__(
@@ -42,8 +54,18 @@ class HKMacauPhoneRecognizer(PatternRecognizer):
                     score=0.95,
                 ),
                 Pattern(
+                    name="mainland_phone_with_country_code",
+                    regex=r"(?<![A-Za-z0-9])\+86[\s-]?1[3-9]\d{9}(?![A-Za-z0-9])",
+                    score=0.90,
+                ),
+                Pattern(
                     name="macau_landline_28_prefix",
                     regex=r"(?<![A-Za-z0-9])28\d{6}(?![A-Za-z0-9])",
+                    score=0.85,
+                ),
+                Pattern(
+                    name="mainland_mobile_11_digit",
+                    regex=r"(?<![A-Za-z0-9])1[3-9]\d{9}(?![A-Za-z0-9])",
                     score=0.85,
                 ),
                 Pattern(
@@ -53,8 +75,20 @@ class HKMacauPhoneRecognizer(PatternRecognizer):
                 ),
             ],
             name="HKMacauPhoneRecognizer",
-            context=["phone", "tel", "mobile", "call", "fax", "聯絡", "電話", "手提", "辦公"],
+            context=["phone", "tel", "mobile", "call", "fax", "聯絡", "電話", "手提", "手機", "辦公", "國內"],
         )
+
+    def analyze(
+        self,
+        text: str,
+        entities: List[str],
+        nlp_artifacts: Optional[NlpArtifacts] = None,
+    ) -> List[RecognizerResult]:
+        results = super().analyze(text, entities, nlp_artifacts)
+        return [
+            r for r in results
+            if not self._DATE_LIKE_RE.match(text[r.start:r.end])
+        ]
 
 
 class IPAddressRecognizer(PatternRecognizer):

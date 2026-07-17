@@ -120,6 +120,33 @@ class TestHKMacauPhoneRecognizer:
         assert len(results) == 1
         assert text[results[0].start:results[0].end] == "28512345"
 
+    def test_detects_mainland_mobile_11_digit(self):
+        rec = HKMacauPhoneRecognizer()
+        text = "國內手機13800138000"
+        results = rec.analyze(text=text, entities=["PHONE_NUMBER"], nlp_artifacts=None)
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "13800138000"
+
+    def test_detects_mainland_mobile_with_country_code(self):
+        rec = HKMacauPhoneRecognizer()
+        text = "Call +86 13800138000"
+        results = rec.analyze(
+            text=text,
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 1
+        assert text[results[0].start:results[0].end] == "+86 13800138000"
+
+    def test_no_false_positive_on_date_like_8_digit(self):
+        rec = HKMacauPhoneRecognizer()
+        results = rec.analyze(
+            text="20260701-00125",
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 0
+
 
 class TestIPAddressRecognizer:
     def test_detects_ipv4(self):
