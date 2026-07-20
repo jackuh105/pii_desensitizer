@@ -36,6 +36,27 @@ _EN_ADDRESS_PATTERNS = [
     r"(?<![A-Za-z0-9])[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Bldg|Tower|Centre|Plaza|Garden)(?![A-Za-z0-9])",
 ]
 
+_PT_STREET_SUFFIXES = (
+    r"Rua|Avenida|Av|Travessa|Tv|Estrada|Caminho|Calçada|Largo|Praça|"
+    r"Praceta|Beco|Pátio|Alameda|Rotunda|Bairro|Parque|Jardim|Adro|"
+    r"Azinhaga|Escadaria|Miradouro|Rampa|Istmo|Ponte|Túnel|Viaduto"
+)
+
+_PT_BUILDING_SUFFIXES = (
+    r"Edifício|Centro Comercial|Centro|Jardins|Bloco|Torre|"
+    r"Urbanização|Condomínio|Vivenda|Quinta"
+)
+
+_PT_ADDRESS_PATTERNS = [
+    rf"(?<![A-Za-z0-9])(?:{_PT_STREET_SUFFIXES})\.?\s+"
+    rf"(?:(?:de|da|do|das|dos)\s+)?"
+    rf"[A-ZÀ-Ý][a-zà-ÿ]+"
+    rf"(?:\s+[A-ZÀ-Ý][a-zà-ÿ]+)*",
+    rf"(?<![A-Za-z0-9])(?:{_PT_BUILDING_SUFFIXES})\s+"
+    rf"[A-ZÀ-Ý][a-zà-ÿ]+"
+    rf"(?:\s+[A-ZÀ-Ý][a-zà-ÿ]+)*",
+]
+
 # HK/Macau district keywords for context boosting
 _HK_MACAU_DISTRICTS = [
     # HK Island
@@ -66,6 +87,9 @@ class AddressRecognizer(PatternRecognizer):
         ] + [
             Pattern(name=f"en_addr_{i}", regex=p, score=0.6)
             for i, p in enumerate(_EN_ADDRESS_PATTERNS)
+        ] + [
+            Pattern(name=f"pt_addr_{i}", regex=p, score=0.6)
+            for i, p in enumerate(_PT_ADDRESS_PATTERNS)
         ]
 
         super().__init__(
