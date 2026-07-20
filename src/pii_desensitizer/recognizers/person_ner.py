@@ -24,7 +24,7 @@ ChinesePersonRecognizer:
     Traditional text.
 
   Context-based fallback:
-    zh_core_web_sm has inconsistent recall — some names (e.g. 施例男) are never
+    zh_core_web_sm has inconsistent recall — some names are never
     detected even in isolation. A regex fallback matches form-field keywords
     (姓名, 子女, 申請人, etc.) followed by 2-4 CJK characters to catch names
     the NER model misses.
@@ -103,7 +103,7 @@ class ChinesePersonRecognizer(EntityRecognizer):
 
     Primary: zh_core_web_sm NER (converted Traditional→Simplified via OpenCC).
     Fallback: regex matching form-field keywords followed by 2-4 CJK characters,
-    for names the NER model misses (e.g. 施例男, 陳例華).
+    for names the NER model misses.
     """
 
     _PUNCTUATION_CHARS = set("()（）.,，。、；;：:！!？?「」『』\"'`'\"")
