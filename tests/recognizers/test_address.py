@@ -67,3 +67,40 @@ class TestAddressRecognizer:
         for r in results:
             span_len = r.end - r.start
             assert span_len <= 15, f"Match span {span_len} chars too long: {text[r.start:r.end]!r}"
+
+    def test_detects_portuguese_street(self):
+        rec = AddressRecognizer()
+        text = "Rua de Exemplo"
+        results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
+        assert len(results) >= 1
+        assert "Rua" in text[results[0].start:results[0].end]
+
+    def test_detects_portuguese_avenue(self):
+        rec = AddressRecognizer()
+        text = "Avenida de Teste Grande"
+        results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
+        assert len(results) >= 1
+
+    def test_detects_portuguese_abbreviated(self):
+        rec = AddressRecognizer()
+        text = "Av. do Exemplo"
+        results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
+        assert len(results) >= 1
+
+    def test_detects_portuguese_building(self):
+        rec = AddressRecognizer()
+        text = "Edifício Comercial Teste"
+        results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
+        assert len(results) >= 1
+
+    def test_detects_portuguese_street_after_chinese(self):
+        rec = AddressRecognizer()
+        text = "住在Rua de Exemplo"
+        results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
+        assert len(results) >= 1
+
+    def test_no_false_positive_on_portuguese_common_word(self):
+        rec = AddressRecognizer()
+        text = "This project is almost done"
+        results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
+        assert len(results) == 0

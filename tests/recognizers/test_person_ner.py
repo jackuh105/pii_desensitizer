@@ -222,6 +222,66 @@ class TestChinesePersonRecognizerContextFallback:
         assert len(overlaps) == 0
 
 
+class TestChinesePersonRecognizerPortugueseFallback:
+    """Tests for Portuguese name detection via context fallback.
+
+    All names are synthetic — common Portuguese surnames combined with
+    'TESTE' or 'EXEMPLO' tokens to ensure they are never real PII.
+    """
+
+    @pytest.fixture(scope="module")
+    def recognizer(self):
+        rec = ChinesePersonRecognizer()
+        rec.load()
+        return rec
+
+    def test_detects_all_caps_bir_name(self, recognizer):
+        text = "姓名：ALVES TESTE RODRIGUES"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "ALVES TESTE RODRIGUES" in person_texts
+
+    def test_detects_title_case_portuguese_name(self, recognizer):
+        text = "姓名：João da Silva Teste"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "João da Silva Teste" in person_texts
+
+    def test_detects_multi_word_with_prepositions(self, recognizer):
+        text = "申請人：Pedro dos Santos Exemplo"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "Pedro dos Santos Exemplo" in person_texts
+
+    def test_detects_short_caps_name(self, recognizer):
+        text = "姓名：TESTE SILVA"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_texts = [text[r.start:r.end] for r in results]
+        assert "TESTE SILVA" in person_texts
+
+    def test_no_false_positive_on_id_field(self, recognizer):
+        text = "ID：12345678"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        assert len(results) == 0
+
+    def test_no_false_positive_on_phone_field(self, recognizer):
+        text = "電話：61234567"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        assert len(results) == 0
+
+
 class TestEnglishPersonRecognizerCJKFilter:
     """Tests that EnglishPersonRecognizer filters CJK from PERSON results."""
 
