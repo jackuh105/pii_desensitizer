@@ -89,12 +89,21 @@ _NAME_FIELD_KEYWORDS = (
     r"家長|監護人|子女|本人|投訴人|反映人|發件人|收件人"
 )
 
-# Matches: keyword + optional (簽署) + optional whitespace + colon + 2-4 CJK chars
+_CJK_NAME = r"[\u4e00-\u9fff]{2,4}"
+
+_ALL_CAPS_NAME = r"[A-ZÀ-Ý]{2,}(?:\s+[A-ZÀ-Ý]{2,}){1,5}"
+
+_TITLE_CASE_NAME = (
+    r"[A-Z][a-zà-ÿ]+"
+    r"(?:\s+(?:de|da|do|das|dos)\s+[A-Z][a-zà-ÿ]+"
+    r"|\s+[A-Z][a-zà-ÿ]+){1,5}"
+)
+
 _CONTEXT_NAME_RE = re.compile(
     rf"(?:{_NAME_FIELD_KEYWORDS})"
     rf"(?:簽署)?"
     rf"\s*[：:]\s*"
-    rf"([\u4e00-\u9fff]{{2,4}})"
+    rf"({_ALL_CAPS_NAME}|{_TITLE_CASE_NAME}|{_CJK_NAME})"
 )
 
 
