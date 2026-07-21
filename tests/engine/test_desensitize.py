@@ -6,7 +6,10 @@ from fakeredis import FakeRedis
 
 from pii_desensitizer.store.redis_store import RedisMappingStore
 from pii_desensitizer.engine.placeholder import PlaceholderOperator
-from pii_desensitizer.engine.desensitize import DesensitizationEngine
+from pii_desensitizer.engine.desensitize import (
+    DesensitizationEngine,
+    StatefulModeUnavailableError,
+)
 
 
 @pytest.fixture(scope="module")
@@ -26,6 +29,12 @@ def store():
 def engine(analyzer, store):
     """Desensitization engine with real analyzer and fake store."""
     return DesensitizationEngine(analyzer=analyzer, store=store)
+
+
+@pytest.fixture
+def stateless_engine(analyzer):
+    """Desensitization engine with no store (stateless-only)."""
+    return DesensitizationEngine(analyzer=analyzer, store=None)
 
 
 class TestDesensitizationEngine:
@@ -113,3 +122,74 @@ class TestDesensitizationEngine:
             session_id=None,
         )
         assert result.text == "Hello world, no sensitive data here"
+
+
+class TestStatelessMode:
+    """Tests for stateless desensitization mode (no Redis)."""
+
+    def test_stateless_returns_mapping(self, stateless_engine):
+        result = stateless_engine.desensitize(
+            text="Contact john@example.com",
+            system_id="test_system",
+            session_id=None,
+            mode="stateless",
+        )
+        assert result.mapping is not None
+        assert "EMAIL_0" in result.mapping
+        assert result.mapping["EMAIL_0"] == "john@example.com"
+
+    def test_stateless_session_id_is_none(self, stateless_engine):
+        result = stateless_engine.desensitize(
+            text="Contact john@example.com",
+            system_id="test_system",
+            session_id=None,
+            mode="stateless",
+        )
+        assert result.session_id is None
+
+    def test_stateless_ignores_session_id(self, stateless_engine):
+        result = stateless_engine.desensitize(
+            text="Contact john@example.com",
+            system_id="test_system",
+            session_id="some-existing-session",
+            mode="stateless",
+        )
+        assert result.session_id is None
+        assert result.mapping is not None
+
+    def test_stateless_does_not_write_to_redis(self, engine, store):
+        engine.desensitize(
+            text="Contact john@example.com",
+            system_id="test_system",
+            session_id="test-session-999",
+            mode="stateless",
+        )
+        mapping = store.load("test_system", "test-session-999")
+        assert mapping == {}
+
+    def test_stateless_no_pii_returns_none_mapping(self, stateless_engine):
+        result = stateless_engine.desensitize(
+            text="Hello world, no PII here",
+            system_id="test_system",
+            session_id=None,
+            mode="stateless",
+        )
+        assert result.mapping is None
+        assert result.text == "Hello world, no PII here"
+
+    def test_stateful_without_store_raises(self, stateless_engine):
+        with pytest.raises(StatefulModeUnavailableError):
+            stateless_engine.desensitize(
+                text="Contact john@example.com",
+                system_id="test_system",
+                session_id=None,
+                mode="stateful",
+            )
+
+    def test_stateful_default_without_store_raises(self, stateless_engine):
+        with pytest.raises(StatefulModeUnavailableError):
+            stateless_engine.desensitize(
+                text="Contact john@example.com",
+                system_id="test_system",
+                session_id=None,
+            )

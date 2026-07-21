@@ -114,3 +114,52 @@ class TestRestoreEndpoint:
             headers=auth_headers,
         )
         assert response.status_code == 422
+
+
+class TestStatelessMode:
+    def test_stateless_returns_mapping(self, client, auth_headers):
+        response = client.post(
+            "/desensitize",
+            json={"text": "Contact john@example.com", "mode": "stateless"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session_id"] is None
+        assert data["mapping"] is not None
+        assert data["mapping"]["EMAIL_0"] == "john@example.com"
+        assert "john@example.com" not in data["text"]
+
+    def test_stateless_no_mapping_field_in_stateful(self, client, auth_headers):
+        response = client.post(
+            "/desensitize",
+            json={"text": "Contact john@example.com", "mode": "stateful"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session_id"] is not None
+        assert "mapping" not in data or data["mapping"] is None
+
+    def test_stateless_default_is_stateful(self, client, auth_headers):
+        response = client.post(
+            "/desensitize",
+            json={"text": "Contact john@example.com"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["session_id"] is not None
+
+    def test_stateless_ignores_session_id(self, client, auth_headers):
+        response = client.post(
+            "/desensitize",
+            json={
+                "text": "Contact john@example.com",
+                "mode": "stateless",
+                "session_id": "should-be-ignored",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["session_id"] is None

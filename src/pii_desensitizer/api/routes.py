@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import time
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from pii_desensitizer.api.auth import AuthContext
 from pii_desensitizer.api.models import (
@@ -16,6 +16,7 @@ from pii_desensitizer.api.models import (
     RestoreRequest,
     RestoreResponse,
 )
+from pii_desensitizer.engine.desensitize import StatefulModeUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,19 @@ async def desensitize(
     start_time = time.monotonic()
 
     engine = request.app.state.desensitize_engine
-    result = engine.desensitize(
-        text=body.text,
-        system_id=auth.system_id,
-        session_id=body.session_id,
-    )
+    try:
+        result = engine.desensitize(
+            text=body.text,
+            system_id=auth.system_id,
+            session_id=body.session_id,
+            mode=body.mode,
+        )
+    except StatefulModeUnavailableError:
+        raise HTTPException(
+            status_code=503,
+            detail="Stateful mode is not available in the current setup. "
+            "Please contact the administrator for more information.",
+        )
 
     elapsed_ms = (time.monotonic() - start_time) * 1000
     logger.info(
@@ -61,7 +70,11 @@ async def desensitize(
         },
     )
 
-    return DesensitizeResponse(text=result.text, session_id=result.session_id)
+    return DesensitizeResponse(
+        text=result.text,
+        session_id=result.session_id,
+        mapping=result.mapping,
+    )
 
 
 @router.post("/restore", response_model=RestoreResponse)
@@ -74,6 +87,13 @@ async def restore(
     start_time = time.monotonic()
 
     engine = request.app.state.restore_engine
+    if engine is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Restore is not available in the current setup. "
+            "Please contact the administrator for more information.",
+        )
+
     result = engine.restore(
         text=body.text,
         system_id=auth.system_id,

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Optional
 
 from pii_desensitizer.store.redis_store import RedisMappingStore
 
@@ -33,7 +34,7 @@ class RestoreEngine:
     - Placeholders not found (unknown/rewritten by LLM) -> left as-is
     """
 
-    def __init__(self, store: RedisMappingStore) -> None:
+    def __init__(self, store: Optional[RedisMappingStore] = None) -> None:
         self._store = store
 
     def restore(
@@ -52,6 +53,9 @@ class RestoreEngine:
         Returns:
             RestoreResult with restored text.
         """
+        if self._store is None:
+            return RestoreResult(text=text)
+
         mapping = self._store.load(system_id, session_id)
 
         if not mapping:

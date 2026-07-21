@@ -20,7 +20,7 @@ class Settings:
     """Immutable application settings."""
 
     api_keys: dict[str, str] = field(default_factory=dict)  # {api_key: system_id}
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str | None = None  # None = Redis disabled (stateless-only mode)
     mapping_ttl_seconds: int = 3600
     host: str = "0.0.0.0"
     port: int = 8000
@@ -43,9 +43,10 @@ def _parse_api_keys(raw: str) -> dict[str, str]:
 def load_settings() -> Settings:
     """Load settings from environment variables."""
     raw_keys = os.getenv("API_KEYS", "")
+    redis_url_env = os.getenv("REDIS_URL")
     return Settings(
         api_keys=_parse_api_keys(raw_keys),
-        redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+        redis_url=redis_url_env if redis_url_env else None,
         mapping_ttl_seconds=int(os.getenv("MAPPING_TTL_SECONDS", "3600")),
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", "8000")),

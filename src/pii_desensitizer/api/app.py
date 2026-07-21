@@ -43,15 +43,24 @@ def create_app() -> FastAPI:
     logger.info("Initializing Presidio analyzer (loading spaCy models)...")
     analyzer = build_analyzer()
 
-    import redis as redis_lib
-    redis_client = redis_lib.from_url(settings.redis_url)
-    store = RedisMappingStore(
-        redis_client=redis_client,
-        ttl_seconds=settings.mapping_ttl_seconds,
-    )
+    store: RedisMappingStore | None = None
+    if settings.redis_url:
+        try:
+            import redis as redis_lib
+            redis_client = redis_lib.from_url(settings.redis_url)
+            redis_client.ping()
+            store = RedisMappingStore(
+                redis_client=redis_client,
+                ttl_seconds=settings.mapping_ttl_seconds,
+            )
+            logger.info("Redis connected successfully")
+        except Exception as e:
+            logger.warning(f"Redis unavailable, stateful mode disabled: {e}")
+    else:
+        logger.info("REDIS_URL not set, running in stateless-only mode")
 
     desensitize_engine = DesensitizationEngine(analyzer=analyzer, store=store)
-    restore_engine = RestoreEngine(store=store)
+    restore_engine = RestoreEngine(store=store) if store else None
 
     app.state.desensitize_engine = desensitize_engine
     app.state.restore_engine = restore_engine

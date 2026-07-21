@@ -13,7 +13,12 @@ class DesensitizeRequest(BaseModel):
     session_id: str | None = Field(
         default=None,
         description="Existing session ID for multi-turn accumulation. "
-        "If omitted, a new session is created.",
+        "If omitted, a new session is created. Ignored in stateless mode.",
+    )
+    mode: str = Field(
+        default="stateful",
+        description="Desensitization mode: 'stateful' (default, uses Redis for "
+        "mapping storage) or 'stateless' (returns mapping directly, no Redis).",
     )
 
 
@@ -21,7 +26,13 @@ class DesensitizeResponse(BaseModel):
     """Response body for POST /desensitize."""
 
     text: str = Field(..., description="Desensitized text with {{TYPE_N}} placeholders")
-    session_id: str = Field(..., description="Session ID for later restoration")
+    session_id: str | None = Field(
+        ..., description="Session ID for later restoration. Null in stateless mode."
+    )
+    mapping: dict[str, str] | None = Field(
+        default=None,
+        description="Placeholder→original mapping. Only present in stateless mode.",
+    )
 
 
 class RestoreRequest(BaseModel):
