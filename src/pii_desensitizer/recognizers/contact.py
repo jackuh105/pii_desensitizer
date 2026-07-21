@@ -31,12 +31,17 @@ class EmailRecognizer(PatternRecognizer):
 class HKMacauPhoneRecognizer(PatternRecognizer):
     """Detect Hong Kong, Macau, and mainland China phone numbers.
 
-    Four-tier scoring:
+    Scoring:
       - +852/+853 with country code: score 0.95
       - +86 with country code (mainland): score 0.90
       - 28 prefix (Macau landline): score 0.85
       - Mainland 11-digit mobile (1[3-9] prefix): score 0.85
-      - Other 8-digit HK/Macau: score 0.4 (relies on context, date-like filtered)
+      - Macau mobile 6-prefix (8-digit): score 0.4
+
+    Note: This is a Macau-focused system. HK phones without +852 country code
+    are not matched — HK contacts in Macau forms always include the country code.
+    Non-6-prefix 8-digit numbers (error codes, account numbers, etc.) are not
+    matched, preventing false positives.
     """
 
     # YYYYMMDD pattern: 19xx/20xx + valid month + valid day
@@ -69,8 +74,8 @@ class HKMacauPhoneRecognizer(PatternRecognizer):
                     score=0.85,
                 ),
                 Pattern(
-                    name="hk_macau_phone_8_digit",
-                    regex=r"(?<![A-Za-z0-9])[2-9]\d{3}[\s-]?\d{4}(?![A-Za-z0-9])",
+                    name="macau_mobile_6_prefix",
+                    regex=r"(?<![A-Za-z0-9])6\d{3}[\s-]?\d{4}(?![A-Za-z0-9])",
                     score=0.4,
                 ),
             ],

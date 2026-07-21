@@ -82,7 +82,7 @@ class TestHKMacauPhoneRecognizer:
     def test_detects_phone_with_hyphen(self):
         rec = HKMacauPhoneRecognizer()
         results = rec.analyze(
-            text="Fax: 9876-5432",
+            text="Fax: 6123-4567",
             entities=["PHONE_NUMBER"],
             nlp_artifacts=None,
         )
@@ -108,10 +108,10 @@ class TestHKMacauPhoneRecognizer:
 
     def test_detects_phone_after_chinese_text(self):
         rec = HKMacauPhoneRecognizer()
-        text = "電話98765432"
+        text = "電話61234567"
         results = rec.analyze(text=text, entities=["PHONE_NUMBER"], nlp_artifacts=None)
         assert len(results) == 1
-        assert text[results[0].start:results[0].end] == "98765432"
+        assert text[results[0].start:results[0].end] == "61234567"
 
     def test_detects_macau_landline_28_prefix(self):
         rec = HKMacauPhoneRecognizer()
@@ -142,6 +142,24 @@ class TestHKMacauPhoneRecognizer:
         rec = HKMacauPhoneRecognizer()
         results = rec.analyze(
             text="20260701-00125",
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 0
+
+    def test_no_false_positive_on_error_code(self):
+        rec = HKMacauPhoneRecognizer()
+        results = rec.analyze(
+            text="錯誤code：96510246",
+            entities=["PHONE_NUMBER"],
+            nlp_artifacts=None,
+        )
+        assert len(results) == 0
+
+    def test_no_match_on_non_6_prefix_8_digit(self):
+        rec = HKMacauPhoneRecognizer()
+        results = rec.analyze(
+            text="參考編號74111111",
             entities=["PHONE_NUMBER"],
             nlp_artifacts=None,
         )
