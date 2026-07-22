@@ -15,3 +15,8 @@ wheels/
 
 # test reports
 reports/
+
+# Local test harness (contains test data, not part of the codebase)
+run_tests.py
+test_cases_ground_truth.py
+test_cases.md
