@@ -305,3 +305,44 @@ class TestEnglishPersonRecognizerCJKFilter:
             text=text, entities=["PERSON"], nlp_artifacts=artifacts
         )
         assert len(results) == 0
+
+    def test_filters_cjk_punctuation_false_positive(self):
+        """CJK punctuation (corner brackets, etc.) tagged as PERSON by
+        en_core_web_sm should be filtered out.
+
+        U+3000-U+303F (CJK Symbols and Punctuation) includes 「」『』 which
+        en_core_web_sm occasionally tags as PERSON. These are not covered by
+        the basic CJK ideograph range (U+4E00-U+9FFF).
+        """
+        import spacy
+        from presidio_analyzer.nlp_engine import NlpArtifacts
+
+        nlp = spacy.load("en_core_web_sm")
+        rec = EnglishPersonRecognizer()
+        # Full case_01 text — en_core_web_sm tags 」 (U+300D) as PERSON only
+        # in this broader context (not in isolation), matching production input.
+        text = (
+            "20260701-00125\n"
+            "主　題：關於解除「一戶通」親子帳戶綁定之申請\n"
+            "致：身份證局\n"
+            "本人姓名：蔡測試\n"
+            "澳門永久居民身份證編號：51111111\n"
+            "為「澳門公共服務一戶通」\n"
+            "用戶名：testuser\n"
+        )
+        doc = nlp(text)
+        artifacts = NlpArtifacts(
+            entities=doc.ents,
+            tokens=doc,
+            tokens_indices=[t.idx for t in doc],
+            lemmas=[t.lemma_ for t in doc],
+            nlp_engine=None,
+            language="en",
+        )
+        results = rec.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=artifacts
+        )
+        # No PERSON results should remain — 」 is CJK punctuation, not a name
+        person_spans = [text[r.start:r.end] for r in results]
+        assert "」" not in person_spans
+        assert "「" not in person_spans

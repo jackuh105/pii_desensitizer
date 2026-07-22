@@ -57,7 +57,7 @@ class EnglishPersonRecognizer(SpacyRecognizer):
     PERSON span from the English model containing CJK characters is garbage.
     """
 
-    _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+    _CJK_RE = re.compile(r"[\u3000-\u303f\u4e00-\u9fff]")
 
     def __init__(self) -> None:
         super().__init__(
