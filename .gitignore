@@ -12,3 +12,6 @@ wheels/
 # Environment files (contain secrets)
 .env
 !.env.example
+
+# test reports
+reports/
