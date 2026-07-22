@@ -238,6 +238,14 @@ class ChinesePersonRecognizer(EntityRecognizer):
             if not self._is_stopword(text[r.start:r.end])
         ]
 
+        # Filter pure-digit spans and Portuguese address prefixes that
+        # zh_core_web_sm mislabels as PERSON (e.g. phone numbers, "Edifício...")
+        results = [
+            r for r in results
+            if not _DIGITS_ONLY_RE.match(text[r.start:r.end])
+            and not _PT_ADDRESS_PREFIX_RE.match(text[r.start:r.end])
+        ]
+
         for m in _CONTEXT_NAME_RE.finditer(text):
             start, end = m.start(1), m.end(1)
             # Skip if this span overlaps with an existing NER result

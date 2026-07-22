@@ -187,6 +187,20 @@ class TestChinesePersonRecognizer:
                 f"PERSON results: {person_spans}"
             )
 
+    def test_filters_zh_ner_digit_false_positive(self, recognizer):
+        """zh_core_web_sm tags digit strings as PERSON (e.g. phone numbers).
+        Pure digits are never person names and should be filtered.
+        """
+        text = "姓名：陳測試\nID：50111111\n電話：66111111"
+        results = recognizer.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=None
+        )
+        person_spans = [text[r.start:r.end] for r in results]
+        digit_spans = [s for s in person_spans if s.isdigit()]
+        assert len(digit_spans) == 0, (
+            f"Expected no digit-only PERSON spans, but found: {digit_spans}"
+        )
+
 
 class TestChinesePersonRecognizerContextFallback:
     """Tests for the context-based fallback that catches names zh NER misses."""
