@@ -126,3 +126,27 @@ class TestHKLicensePlateRecognizer:
         results = rec.analyze(text=text, entities=["LICENSE_PLATE"], nlp_artifacts=None)
         assert len(results) == 1
         assert text[results[0].start:results[0].end] == "MX-00-00"
+
+    def test_no_false_positive_on_lowercase_word_with_digits(self):
+        """Lowercase 2-letter words followed by 4 digits should NOT match as plates.
+
+        Presidio's default re.IGNORECASE makes [A-Z]{2} match lowercase,
+        causing 'on 1990', 'to 2345', 'at 1990' to match as license plates.
+        License plates are always uppercase — lowercase must not match.
+        """
+        rec = HKLicensePlateRecognizer()
+        false_positive_texts = [
+            "Born on 1990-01-15",
+            "He went to 2345 block",
+            "Born at 1990",
+            "Died on 2023",
+            "Please go to 5678 room",
+        ]
+        for text in false_positive_texts:
+            results = rec.analyze(
+                text=text, entities=["LICENSE_PLATE"], nlp_artifacts=None
+            )
+            assert len(results) == 0, (
+                f"Expected no plate match for {text!r}, but got "
+                f"{[text[r.start:r.end] for r in results]}"
+            )

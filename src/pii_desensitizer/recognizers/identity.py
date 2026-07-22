@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from presidio_analyzer import Pattern, PatternRecognizer
 
 
@@ -118,4 +120,5 @@ class HKLicensePlateRecognizer(PatternRecognizer):
             ],
             name="HKLicensePlateRecognizer",
             context=["plate", "車牌", "vehicle", "car", "license"],
+            global_regex_flags=re.MULTILINE | re.DOTALL,
         )
