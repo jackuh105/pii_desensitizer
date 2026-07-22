@@ -66,6 +66,20 @@ class EnglishPersonRecognizer(SpacyRecognizer):
             supported_language="en",
         )
 
+    @staticmethod
+    def _is_stopword(span_text: str) -> bool:
+        """Check if a PERSON span is a common English word, not a name.
+
+        Only filters single-word spans (no spaces) that are pure ASCII.
+        Multi-word spans (e.g. "John Smith") and spans with diacritics
+        (e.g. "João") are never filtered.
+        """
+        if " " in span_text:
+            return False
+        if not span_text.isascii() or not span_text.isalpha():
+            return False
+        return span_text.lower() in _PERSON_STOPWORDS
+
     def analyze(
         self,
         text: str,
@@ -78,7 +92,10 @@ class EnglishPersonRecognizer(SpacyRecognizer):
             for r in results
             if not (
                 r.entity_type == "PERSON"
-                and self._CJK_RE.search(text[r.start : r.end])
+                and (
+                    self._CJK_RE.search(text[r.start : r.end])
+                    or self._is_stopword(text[r.start : r.end])
+                )
             )
         ]
 
@@ -90,6 +107,33 @@ _NAME_FIELD_KEYWORDS = (
 )
 
 _CJK_NAME = r"[\u4e00-\u9fff]{2,4}"
+
+# Common English words that spaCy mislabels as PERSON when processing
+# mixed-language or short text. These are never person names.
+# Only single-word spans (no spaces) are checked against this set.
+_PERSON_STOPWORDS = frozenset({
+    # Prepositions / conjunctions
+    "for", "out", "but", "and", "nor", "yet", "so", "or",
+    "in", "on", "at", "to", "of", "by", "with", "from",
+    "into", "onto", "upon", "over", "under", "after", "before",
+    "about", "above", "below", "between", "through", "during",
+    # Common verbs
+    "born", "been", "have", "has", "had", "was", "were",
+    "will", "would", "could", "should", "shall", "may", "might",
+    "can", "did", "does", "done", "made", "make", "makes",
+    "get", "got", "put", "set", "let", "run", "ran",
+    # Common nouns / adjectives
+    "email", "phone", "tel", "fax", "date", "time", "year",
+    "month", "day", "version", "address", "name", "number",
+    "code", "id", "no", "yes", "true", "false", "null",
+    "user", "test", "demo", "sample", "example", "data",
+    "file", "form", "page", "link", "url", "http", "https",
+    # Pronouns
+    "this", "that", "these", "those", "there", "here",
+    "which", "what", "who", "whom", "whose", "where", "when",
+    "why", "how", "all", "any", "some", "none", "both",
+    "each", "every", "other", "another", "such", "same",
+})
 
 _ALL_CAPS_NAME = r"[A-ZÀ-Ý]{2,}(?:\s+[A-ZÀ-Ý]{2,}){1,5}"
 
@@ -116,6 +160,9 @@ class ChinesePersonRecognizer(EntityRecognizer):
     """
 
     _PUNCTUATION_CHARS = set("()（）.,，。、；;：:！!？?「」『』\"'`'\"")
+
+    # Reuse the stopword filter from EnglishPersonRecognizer
+    _is_stopword = staticmethod(EnglishPersonRecognizer._is_stopword)
 
     def __init__(self) -> None:
         super().__init__(
@@ -164,6 +211,13 @@ class ChinesePersonRecognizer(EntityRecognizer):
                     },
                 )
             )
+
+        # Filter English common words that zh_core_web_sm mislabels as PERSON
+        # when processing English text (e.g. "for", "out", "Born")
+        results = [
+            r for r in results
+            if not self._is_stopword(text[r.start:r.end])
+        ]
 
         for m in _CONTEXT_NAME_RE.finditer(text):
             start, end = m.start(1), m.end(1)

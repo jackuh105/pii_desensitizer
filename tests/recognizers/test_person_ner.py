@@ -166,6 +166,27 @@ class TestChinesePersonRecognizer:
         person_texts = [text[r.start:r.end] for r in results]
         assert "陳大文" in person_texts
 
+    def test_filters_zh_ner_english_stopword_false_positive(self, recognizer):
+        """zh_core_web_sm tags English common words as PERSON when processing
+        English text. These should be filtered out.
+
+        All test words are common English words, never person names.
+        """
+        test_cases = [
+            ("Please contact john@example.com for details", "for"),
+            ("Version 1.2.3 is out", "out"),
+            ("Born on 1990-01-15", "Born"),
+        ]
+        for text, stopword in test_cases:
+            results = recognizer.analyze(
+                text=text, entities=["PERSON"], nlp_artifacts=None
+            )
+            person_spans = [text[r.start:r.end] for r in results]
+            assert stopword not in person_spans, (
+                f"Expected '{stopword}' to be filtered, but it appears in "
+                f"PERSON results: {person_spans}"
+            )
+
 
 class TestChinesePersonRecognizerContextFallback:
     """Tests for the context-based fallback that catches names zh NER misses."""
@@ -346,3 +367,28 @@ class TestEnglishPersonRecognizerCJKFilter:
         person_spans = [text[r.start:r.end] for r in results]
         assert "」" not in person_spans
         assert "「" not in person_spans
+
+    def test_filters_english_stopword_false_positive(self):
+        """en_core_web_sm tags 'Email' as PERSON in 'Email: alice@test.com'.
+        Common English words should be filtered out.
+        """
+        import spacy
+        from presidio_analyzer.nlp_engine import NlpArtifacts
+
+        nlp = spacy.load("en_core_web_sm")
+        rec = EnglishPersonRecognizer()
+        text = "Email: alice@test.com"
+        doc = nlp(text)
+        artifacts = NlpArtifacts(
+            entities=doc.ents,
+            tokens=doc,
+            tokens_indices=[t.idx for t in doc],
+            lemmas=[t.lemma_ for t in doc],
+            nlp_engine=None,
+            language="en",
+        )
+        results = rec.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=artifacts
+        )
+        person_spans = [text[r.start:r.end] for r in results]
+        assert "Email" not in person_spans
