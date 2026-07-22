@@ -392,3 +392,61 @@ class TestEnglishPersonRecognizerCJKFilter:
         )
         person_spans = [text[r.start:r.end] for r in results]
         assert "Email" not in person_spans
+
+    def test_filters_pure_digit_person_false_positive(self):
+        """en_core_web_sm tags digit strings as PERSON (e.g. phone numbers).
+        Pure digits are never person names and should be filtered.
+        """
+        import spacy
+        from presidio_analyzer.nlp_engine import NlpArtifacts
+
+        nlp = spacy.load("en_core_web_sm")
+        rec = EnglishPersonRecognizer()
+        # Text where en_core_web_sm tags 66111111 as PERSON (context-sensitive:
+        # the "Mr." prefix triggers NER to label the digit string as PERSON)
+        text = "Mr. 66111111 called"
+        doc = nlp(text)
+        artifacts = NlpArtifacts(
+            entities=doc.ents,
+            tokens=doc,
+            tokens_indices=[t.idx for t in doc],
+            lemmas=[t.lemma_ for t in doc],
+            nlp_engine=None,
+            language="en",
+        )
+        results = rec.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=artifacts
+        )
+        person_spans = [text[r.start:r.end] for r in results]
+        # 66111111 should not appear as PERSON (it's a phone number)
+        digit_spans = [s for s in person_spans if s.isdigit()]
+        assert len(digit_spans) == 0, (
+            f"Expected no digit-only PERSON spans, but found: {digit_spans}"
+        )
+
+    def test_filters_portuguese_address_prefix_false_positive(self):
+        """en_core_web_sm tags Portuguese building names as PERSON.
+        Spans starting with Portuguese building/street suffixes are addresses,
+        not person names, and should be filtered.
+        """
+        import spacy
+        from presidio_analyzer.nlp_engine import NlpArtifacts
+
+        nlp = spacy.load("en_core_web_sm")
+        rec = EnglishPersonRecognizer()
+        text = "Edifício Comercial Teste"
+        doc = nlp(text)
+        artifacts = NlpArtifacts(
+            entities=doc.ents,
+            tokens=doc,
+            tokens_indices=[t.idx for t in doc],
+            lemmas=[t.lemma_ for t in doc],
+            nlp_engine=None,
+            language="en",
+        )
+        results = rec.analyze(
+            text=text, entities=["PERSON"], nlp_artifacts=artifacts
+        )
+        person_spans = [text[r.start:r.end] for r in results]
+        # "Edifício Comercial Teste" is an address, not a person name
+        assert "Edifício Comercial Teste" not in person_spans

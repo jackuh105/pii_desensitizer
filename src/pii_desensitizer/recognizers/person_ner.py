@@ -95,6 +95,8 @@ class EnglishPersonRecognizer(SpacyRecognizer):
                 and (
                     self._CJK_RE.search(text[r.start : r.end])
                     or self._is_stopword(text[r.start : r.end])
+                    or _DIGITS_ONLY_RE.match(text[r.start : r.end])
+                    or _PT_ADDRESS_PREFIX_RE.match(text[r.start : r.end])
                 )
             )
         ]
@@ -134,6 +136,23 @@ _PERSON_STOPWORDS = frozenset({
     "why", "how", "all", "any", "some", "none", "both",
     "each", "every", "other", "another", "such", "same",
 })
+
+# Pure digit/separator pattern: matches strings that are entirely digits
+# with optional separators (spaces, hyphens, parentheses).
+# Digit strings are never person names.
+_DIGITS_ONLY_RE = re.compile(r"^[\d\s\-\(\)]+$")
+
+# Portuguese building/street suffixes that indicate an address, not a name.
+# If a PERSON span starts with one of these, it's an address false positive.
+_PT_ADDRESS_PREFIX_RE = re.compile(
+    r"^(?:Edif[ií]cio|Centro Comercial|Centro|Jardins?|Bloco|Torre|"
+    r"Urbaniza[çc][ãa]o|Condom[ií]nio|Vivenda|Quinta|"
+    r"Rua|Avenida|Av\.?|Travessa|Tv\.?|Estrada|Caminho|"
+    r"Cal[çc]ada|Largo|Pra[çc]a|Praceta|Beco|P[áa]tio|"
+    r"Alameda|Rotunda|Bairro|Parque|Jardim|Adro|"
+    r"Azinhaga|Escadaria|Miradouro|Rampa|Istmo|Ponte|T[úu]nel|Viaduto)\b",
+    re.IGNORECASE,
+)
 
 _ALL_CAPS_NAME = r"[A-ZÀ-Ý]{2,}(?:\s+[A-ZÀ-Ý]{2,}){1,5}"
 
