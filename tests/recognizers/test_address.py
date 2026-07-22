@@ -144,3 +144,49 @@ class TestAddressRecognizer:
             assert len(results) >= 1, (
                 f"Expected address match for {text!r}, but got none"
             )
+
+    def test_detects_all_caps_portuguese_street(self):
+        """All-caps Portuguese street names (e.g. official documents) should be detected.
+
+        'RUA DE EXEMPLO' and 'AVENIDA DE TESTE GRANDE' use all-caps suffixes.
+        These are real addresses and must be detected.
+        """
+        rec = AddressRecognizer()
+        test_cases = [
+            "RUA DE EXEMPLO",
+            "AVENIDA DE TESTE GRANDE",
+        ]
+        for text in test_cases:
+            results = rec.analyze(
+                text=text, entities=["ADDRESS"], nlp_artifacts=None
+            )
+            assert len(results) >= 1, (
+                f"Expected address match for {text!r}, but got none"
+            )
+
+    def test_detects_all_caps_portuguese_building(self):
+        """All-caps Portuguese building names should be detected."""
+        rec = AddressRecognizer()
+        text = "EDIFÍCIO COMERCIAL TESTE"
+        results = rec.analyze(
+            text=text, entities=["ADDRESS"], nlp_artifacts=None
+        )
+        assert len(results) >= 1, (
+            f"Expected address match for {text!r}, but got none"
+        )
+
+    def test_no_false_positive_on_lowercase_portuguese_word(self):
+        """Lowercase Portuguese common nouns should NOT match as addresses.
+
+        'rua' (street) as a common noun in prose should not trigger address
+        detection — only the proper noun form (Rua/RUA) should.
+        """
+        rec = AddressRecognizer()
+        text = "A rua é longa"
+        results = rec.analyze(
+            text=text, entities=["ADDRESS"], nlp_artifacts=None
+        )
+        assert len(results) == 0, (
+            f"Expected no address match for {text!r}, but got "
+            f"{[text[r.start:r.end] for r in results]}"
+        )

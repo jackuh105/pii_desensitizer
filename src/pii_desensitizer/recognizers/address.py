@@ -47,25 +47,32 @@ _EN_ADDRESS_PATTERNS = [
     rf"(?<![A-Za-z0-9]){_EN_WORD}(?:\s+{_EN_WORD})*\s+(?:{_EN_SUFFIXES})(?![A-Za-z0-9])",
 ]
 
-_PT_STREET_SUFFIXES = (
+# Portuguese street suffixes: Title Case OR all-caps (not lowercase)
+_PT_STREET_SUFFIXES_TITLE = (
     r"Rua|Avenida|Av|Travessa|Tv|Estrada|Caminho|Calçada|Largo|Praça|"
     r"Praceta|Beco|Pátio|Alameda|Rotunda|Bairro|Parque|Jardim|Adro|"
     r"Azinhaga|Escadaria|Miradouro|Rampa|Istmo|Ponte|Túnel|Viaduto"
 )
+_PT_STREET_SUFFIXES_UPPER = _PT_STREET_SUFFIXES_TITLE.upper()
 
-_PT_BUILDING_SUFFIXES = (
+# Portuguese building suffixes: Title Case OR all-caps (not lowercase)
+_PT_BUILDING_SUFFIXES_TITLE = (
     r"Edifício|Centro Comercial|Centro|Jardins|Bloco|Torre|"
     r"Urbanização|Condomínio|Vivenda|Quinta"
 )
+_PT_BUILDING_SUFFIXES_UPPER = _PT_BUILDING_SUFFIXES_TITLE.upper()
+
+# Portuguese prepositions: lowercase or all-caps (they follow the suffix)
+_PT_PREPOSITIONS = r"(?:de|da|do|das|dos|DE|DA|DO|DAS|DOS)"
 
 _PT_ADDRESS_PATTERNS = [
-    rf"(?<![A-Za-z0-9])(?:{_PT_STREET_SUFFIXES})\.?\s+"
-    rf"(?:(?:de|da|do|das|dos)\s+)?"
-    rf"[A-ZÀ-Ý][a-zà-ÿ]+"
-    rf"(?:\s+[A-ZÀ-Ý][a-zà-ÿ]+)*",
-    rf"(?<![A-Za-z0-9])(?:{_PT_BUILDING_SUFFIXES})\s+"
-    rf"[A-ZÀ-Ý][a-zà-ÿ]+"
-    rf"(?:\s+[A-ZÀ-Ý][a-zà-ÿ]+)*",
+    rf"(?<![A-Za-z0-9])(?:{_PT_STREET_SUFFIXES_TITLE}|{_PT_STREET_SUFFIXES_UPPER})\.?\s+"
+    rf"(?:{_PT_PREPOSITIONS}\s+)?"
+    rf"[A-ZÀ-Ýa-zà-ÿ]+"
+    rf"(?:\s+[A-ZÀ-Ýa-zà-ÿ]+)*",
+    rf"(?<![A-Za-z0-9])(?:{_PT_BUILDING_SUFFIXES_TITLE}|{_PT_BUILDING_SUFFIXES_UPPER})\s+"
+    rf"[A-ZÀ-Ýa-zà-ÿ]+"
+    rf"(?:\s+[A-ZÀ-Ýa-zà-ÿ]+)*",
 ]
 
 # HK/Macau district keywords for context boosting
