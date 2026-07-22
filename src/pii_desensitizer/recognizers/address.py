@@ -12,6 +12,8 @@ False negatives are acceptable; false positives are minimized.
 
 from __future__ import annotations
 
+import re
+
 from presidio_analyzer import Pattern, PatternRecognizer
 
 # Characters allowed in address prefix: excludes whitespace + sentence/clause
@@ -30,10 +32,19 @@ _ZH_ADDRESS_PATTERNS = [
     rf"{_ZH_PREFIX}{{2,10}}(?:馬路|街|里|巷|圍|石級|斜路)[\d]*號?",
 ]
 
-# English address keywords
+# English address word: Title Case (e.g. "Des", "Voeux") OR all-caps (e.g. "MAIN")
+_EN_WORD = r"(?:[A-ZÀ-Ý][a-zà-ÿ]+|[A-ZÀ-Ý]{2,})"
+
+# English address suffix: Title Case OR all-caps (e.g. "Rd" or "RD", not "rd")
+_EN_SUFFIXES = (
+    r"Rd|RD|St|ST|Ave|AVE|Drive|DRIVE|Dr|DR|Bldg|BLDG|"
+    r"Tower|TOWER|Centre|CENTRE|Plaza|PLAZA|Garden|GARDEN|"
+    r"Ct|CT|Cres|CRES|Terr|TERR|Ln|LN"
+)
+
 _EN_ADDRESS_PATTERNS = [
-    r"(?<![A-Za-z0-9])\d+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Dr|Bldg|Tower|Centre|Plaza|Garden|Ct|Cres|Terr|Ln)(?![A-Za-z0-9])",
-    r"(?<![A-Za-z0-9])[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Rd|St|Ave|Drive|Bldg|Tower|Centre|Plaza|Garden)(?![A-Za-z0-9])",
+    rf"(?<![A-Za-z0-9])\d+\s+{_EN_WORD}(?:\s+{_EN_WORD})*\s+(?:{_EN_SUFFIXES})(?![A-Za-z0-9])",
+    rf"(?<![A-Za-z0-9]){_EN_WORD}(?:\s+{_EN_WORD})*\s+(?:{_EN_SUFFIXES})(?![A-Za-z0-9])",
 ]
 
 _PT_STREET_SUFFIXES = (
@@ -97,4 +108,5 @@ class AddressRecognizer(PatternRecognizer):
             patterns=patterns,
             name="AddressRecognizer",
             context=_HK_MACAU_DISTRICTS,
+            global_regex_flags=re.MULTILINE | re.DOTALL,
         )

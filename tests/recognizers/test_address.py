@@ -104,3 +104,43 @@ class TestAddressRecognizer:
         text = "This project is almost done"
         results = rec.analyze(text=text, entities=["ADDRESS"], nlp_artifacts=None)
         assert len(results) == 0
+
+    def test_no_false_positive_on_lowercase_road_abbreviation(self):
+        """Lowercase 'rd', 'st', 'ave' in common text should NOT match as addresses.
+
+        Presidio's default re.IGNORECASE makes Rd|St|Ave match lowercase,
+        causing 'The rd is bumpy' to match as an address.
+        """
+        rec = AddressRecognizer()
+        false_positive_texts = [
+            "The rd is bumpy",
+            "This st is narrow",
+            "Walk down the ave",
+        ]
+        for text in false_positive_texts:
+            results = rec.analyze(
+                text=text, entities=["ADDRESS"], nlp_artifacts=None
+            )
+            assert len(results) == 0, (
+                f"Expected no address match for {text!r}, but got "
+                f"{[text[r.start:r.end] for r in results]}"
+            )
+
+    def test_detects_all_caps_english_address(self):
+        """All-caps English addresses (e.g. envelope labels) should be detected.
+
+        '123 MAIN ST' and '1 Des Voeux RD' use all-caps suffixes and possibly
+        all-caps street names. These are real addresses and must be detected.
+        """
+        rec = AddressRecognizer()
+        test_cases = [
+            "1 Des Voeux RD, Central",
+            "123 MAIN ST",
+        ]
+        for text in test_cases:
+            results = rec.analyze(
+                text=text, entities=["ADDRESS"], nlp_artifacts=None
+            )
+            assert len(results) >= 1, (
+                f"Expected address match for {text!r}, but got none"
+            )
